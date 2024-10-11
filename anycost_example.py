@@ -12,18 +12,21 @@ import decimal
 import getpass
 import json
 import sys
-from typing import List, Dict
+import argparse
 
 import requests
 
+# Check for Python version 3.9 or newer
+if sys.version_info < (3, 9):
+    sys.exit("This script requires Python 3.9 or newer.")
 
-def read_csv(file_path: str) -> List[Dict[str, str]]:
+def read_csv(file_path: str) -> list[dict[str, str]]:
     """Read a CSV file and return a list of rows as dictionaries."""
     with open(file_path, "r") as file:
         return list(csv.DictReader(file))
 
 
-def process_usage_data(file_path: str) -> List[Dict[str, str]]:
+def process_usage_data(file_path: str) -> list[dict[str, str]]:
     """Process usage data and return transformed CBF rows."""
     usage_rows = read_csv(file_path)
     cbf_rows = []
@@ -40,7 +43,7 @@ def process_usage_data(file_path: str) -> List[Dict[str, str]]:
     return cbf_rows
 
 
-def process_purchase_commitments(file_path: str) -> List[Dict[str, str]]:
+def process_purchase_commitments(file_path: str) -> list[dict[str, str]]:
     """Process purchase commitments data and return transformed CBF rows."""
     purchase_commitment_rows = read_csv(file_path)
     cbf_rows = []
@@ -56,7 +59,7 @@ def process_purchase_commitments(file_path: str) -> List[Dict[str, str]]:
     return cbf_rows
 
 
-def process_discounts(file_path: str) -> List[Dict[str, str]]:
+def process_discounts(file_path: str) -> list[dict[str, str]]:
     """Process discounts data and return transformed CBF rows."""
     discount_rows = read_csv(file_path)
     cbf_rows = []
@@ -72,7 +75,7 @@ def process_discounts(file_path: str) -> List[Dict[str, str]]:
     return cbf_rows
 
 
-def write_cbf_rows_to_csv(cbf_rows: List[Dict[str, str]], output_file_path: str):
+def write_cbf_rows_to_csv(cbf_rows: list[dict[str, str]], output_file_path: str):
     """Write CBF rows to a CSV file."""
     with open(output_file_path, "w") as file:
         writer = csv.DictWriter(
@@ -90,7 +93,7 @@ def write_cbf_rows_to_csv(cbf_rows: List[Dict[str, str]], output_file_path: str)
         writer.writerows(cbf_rows)
 
 
-def upload_to_anycost(cbf_rows: List[Dict[str, str]]):
+def upload_to_anycost(cbf_rows: list[dict[str, str]]):
     """Upload CBF rows to an AnyCost Stream connection."""
     anycost_stream_connection_id = input("Enter your AnyCost Stream Connection ID: ")
     cloudzero_api_key = getpass.getpass("Enter your CloudZero API Key: ")
@@ -105,12 +108,19 @@ def upload_to_anycost(cbf_rows: List[Dict[str, str]]):
 
 
 def main():
-    cbf_rows = []
-    cbf_rows.extend(process_usage_data("example_cloud_provider_data/cloud_usage.csv"))
-    cbf_rows.extend(process_purchase_commitments("example_cloud_provider_data/cloud_purchase_commitments.csv"))
-    cbf_rows.extend(process_discounts("example_cloud_provider_data/cloud_discounts.csv"))
+    parser = argparse.ArgumentParser(description="Process and upload cloud billing data.")
+    parser.add_argument("--usage", required=True, help="Path to the usage data CSV file.")
+    parser.add_argument("--commitments", required=True, help="Path to the purchase commitments CSV file.")
+    parser.add_argument("--discounts", required=True, help="Path to the discounts CSV file.")
+    parser.add_argument("--output", required=True, help="Path to the output CBF CSV file.")
+    args = parser.parse_args()
 
-    write_cbf_rows_to_csv(cbf_rows, "cbf/cloud_cbf.csv")
+    cbf_rows = []
+    cbf_rows.extend(process_usage_data(args.usage))
+    cbf_rows.extend(process_purchase_commitments(args.commitments))
+    cbf_rows.extend(process_discounts(args.discounts))
+
+    write_cbf_rows_to_csv(cbf_rows, args.output)
 
     should_continue = input("Would you like to upload the example CBF to an AnyCost Stream connection? (y/n) ")
     if should_continue.lower() == "y":
