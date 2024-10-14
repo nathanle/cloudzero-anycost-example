@@ -4,9 +4,9 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![GitHub release](https://img.shields.io/github/release/cloudzero/template-cloudzero-open-source.svg)
 
-This repository contains an example script to illustrate the structure of an Adaptor for an [AnyCost Stream](https://docs.cloudzero.com/docs/anycost-stream-getting-started) connection. The sample Adaptor script is written in Python and transforms cost data to the [Common Bill Format (CBF)](https://docs.cloudzero.com/docs/anycost-common-bill-format-cbf), then sends the CBF to the [CloudZero REST API](https://docs.cloudzero.com/reference/createoneanycoststreamconnectionbillingdrop).
+This repository contains a Python script that serves as an example of an Adaptor for an [AnyCost Stream](https://docs.cloudzero.com/docs/anycost-stream-getting-started) connection. The script transforms cost data into the [Common Bill Format (CBF)](https://docs.cloudzero.com/docs/anycost-common-bill-format-cbf) and sends the CBF data to the [CloudZero REST API](https://docs.cloudzero.com/reference/createoneanycoststreamconnectionbillingdrop).
 
-You can use this Adaptor as a model for structuring your own AnyCost Stream Adaptor, and modify it to fit your use case.
+You can use this Adaptor as a model for structuring your own AnyCost Stream Adaptor, modifying it to fit your use case.
 
 **Note:** The AnyCost Stream feature is in beta. Contact your CloudZero representative to request access.
 
@@ -15,6 +15,7 @@ You can use this Adaptor as a model for structuring your own AnyCost Stream Adap
 - [Documentation](#documentation)
 - [Installation](#installation)
 - [Getting Started](#getting-started)
+- [Running the Script](#running-the-script)
 - [Usage Examples](#usage-examples)
 - [Contributing](#contributing)
 - [Support + Feedback](#support--feedback)
@@ -35,7 +36,7 @@ You can use this Adaptor as a model for structuring your own AnyCost Stream Adap
 
 ### Prerequisites
 
-- Python 3.12
+- Python 3.9 or newer
 - [An existing AnyCost Stream connection](https://docs.cloudzero.com/docs/anycost-stream-getting-started#step-1-register-the-connection-in-the-ui)
 - [A CloudZero API key](https://app.cloudzero.com/organization/api-keys)
 
@@ -43,19 +44,19 @@ You can use this Adaptor as a model for structuring your own AnyCost Stream Adap
 
 Consider using the [venv](https://docs.python.org/3/library/venv.html) system module to create a virtual environment:
 
-```
+```bash
 python3 -m venv venv
 ```
 
 Activate the virtual environment, if you chose to create it:
 
-```
+```bash
 source venv/bin/activate
 ```
 
 Install the required dependency, which is the Python [requests](https://requests.readthedocs.io/en/latest/) module:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
@@ -79,9 +80,9 @@ Your Adaptor should start by retrieving cost data from your cloud provider. Foll
 
 Because every provider makes its cost data available in a different way, the example Adaptor skips this step. Instead, we've provided you with three CSVs representing the data your Adaptor could retrieve from this step:
 
-- [cloud_usage.csv](./example_cloud_provider_data/cloud_usage.csv): Data related to cloud resource usage
-- [cloud_purchase_commitments.csv](./example_cloud_provider_data/cloud_purchase_commitments.csv): Data for discounts related to committed-use contracts
-- [cloud_discounts.csv](./example_cloud_provider_data/cloud_discounts.csv): Data for other discounts received
+- `cloud_usage.csv`: Data related to cloud resource usage
+- `cloud_purchase_commitments.csv`: Data for discounts related to committed-use contracts
+- `cloud_discounts.csv`: Data for other discounts received
 
 The dummy data is taken from the [CBF example](https://docs.cloudzero.com/docs/anycost-common-bill-format-cbf#examples) in the CloudZero documentation.
 
@@ -91,56 +92,60 @@ The next step is for the Adaptor to remap the existing cost data to the [Common 
 
 This example Adaptor takes the following actions:
 
-- [Reads the data from each of the three sample CSV files.](#read-each-csv-file)
-- [Maps each CSV's data to the appropriate CBF data type.](#map-each-csv-row-to-a-cbf-line-item)
-- [Combines the CBF data into a single CSV.](#combine-all-csv-rows)
-
-#### Read Each CSV File
-
-The Adaptor uses the `read_csv()` function to read each of the three example CSV files that contain CBF data. The filenames are hardcoded in the script, so if you modify this script for your own use case, ensure you change the filenames as needed:
-
-- [example_cloud_provider_data/cloud_usage.csv](./example_cloud_provider_data/cloud_usage.csv)
-- [example_cloud_provider_data/cloud_purchase_commitments.csv](./example_cloud_provider_data/cloud_purchase_commitments.csv)
-- [example_cloud_provider_data/cloud_discounts.csv](./example_cloud_provider_data/cloud_discounts.csv)
-
-#### Map Each CSV Row to a CBF Line Item
-
-Each row within each CSV file represents a single CBF line item. There are multiple [types of line items](https://docs.cloudzero.com/docs/anycost-common-bill-format-cbf#line-item-types), so each line item can represent a charge for usage of a specific resource, a discount for usage of a specific resource, or a charge for a committed use (or savings plan) purchase, for example.
-
-For each row (line item) in a CSV, the Adaptor maps the values to the following [CBF data columns](https://docs.cloudzero.com/docs/anycost-common-bill-format-cbf#data-file-columns):
-
-- `lineitem/type`: The broad category of line item. This example uses the `Usage`, `CommittedUsePurchase`, and `Discount` line item types. [See a full list of supported types.](https://docs.cloudzero.com/docs/anycost-common-bill-format-cbf#line-item-types)
-- `resource/service`: The category of resource associated with the line item. This example includes the `Compute` cloud provider service, the `CommittedUse` purchase commitment discount, and two other discounts.
-- `resource/id`: The unique ID for the resource associated with the line item.
-- `time/usage_start`: The start of the hour during which the line item was charged or applied. Note that the month should be the same for all items in all CSVs, as CloudZero derives the month of usage from this field.
-- `cost/cost`: The cost associated with the line item. Negative costs indicate discounts or credits.
-- `cost/discounted_cost`: The net cost associated with the line item after discounts or credits have been applied.
-
-After the Adaptor maps each row to the appropriate CBF data types, the row is added to the `cbf_rows` list.
-
-#### Combine All CSV Rows
-
-When the Adaptor has populated the `cbf_rows` list with all of the rows for all of the CSV files, the script writes the `cbf_rows` list to a new CSV file so you can inspect all CBF line items. This file is saved as `cbf/cloud_cbf.csv`, and you can also view it [in this repo](./cbf/cloud_cbf.csv).
+- Reads the data from each of the three sample CSV files.
+- Maps each CSV's data to the appropriate CBF data type.
+- Combines the CBF data into a single CSV.
 
 ### Step 3: Send the CBF Data to CloudZero
 
-The final step is for the Adaptor to send the CBF data to the AnyCost Stream connection using CloudZero's [/v2/connections/billing/anycost/{connection_id}/billing drops](https://docs.cloudzero.com/reference/createoneanycoststreamconnectionbillingdrop) API.
+The final step is for the Adaptor to send the CBF data to the AnyCost Stream connection using CloudZero's [/v2/connections/billing/anycost/{connection_id}/billing_drops](https://docs.cloudzero.com/reference/createoneanycoststreamconnectionbillingdrop) API.
 
-When you run the Adaptor script, it asks you if you want to upload the data to CloudZero. If you enter `y`, the Adaptor uses the [requests](https://requests.readthedocs.io/en/latest/) module to send a POST request with a JSON object containing the CBF rows.
+## Running the Script
 
-Note that the API requires each element in the `data` object to be a string. This is why there is no need to convert the strings in the `cbf_rows` list to any other type when you send the request to the API.
+The Python script processes cloud billing data and uploads it to an AnyCost Stream connection. You can now specify input and output file paths as command-line arguments. Ensure that you have Python 3.9 or newer installed before running the script. Below are the steps and usage instructions:
 
-Additionally, if the `month` parameter is not included in the request body, CloudZero derives the month from the dates in the CBF rows. When you upload your own data, ensure all usage dates are within the same month, as they are in this example.
+### Prerequisites
 
-View the [API Reference](https://docs.cloudzero.com/reference/createoneanycoststreamconnectionbillingdrop) for more detailed information about the endpoint.
+- Ensure you have Python 3.9 or newer installed.
+- Prepare your CSV files for usage data, purchase commitments, and discounts.
+- Have your CloudZero API key ready for uploading data.
+
+### Usage
+
+Run the script from the command line with the following syntax:
+
+```bash
+python anycost_example.py --usage <path_to_usage_csv> --commitments <path_to_commitments_csv> --discounts <path_to_discounts_csv> --output <path_to_output_csv>
+```
+
+### Arguments
+
+- `--usage`: Path to the CSV file containing usage data. This file should include columns like `cost`, `discount`, `sku`, `instance_id`, and `usage_date`.
+- `--commitments`: Path to the CSV file containing purchase commitments data. This file should include columns like `commitment_id`, `commitment_date`, and `cost`.
+- `--discounts`: Path to the CSV file containing discounts data. This file should include columns like `discount_type`, `discount_id`, `usage_date`, and `discount`.
+- `--output`: Path to the output CSV file where transformed CBF data will be saved.
+
+### Example
+
+```bash
+python anycost_example.py --usage example_cloud_provider_data/cloud_usage.csv --commitments example_cloud_provider_data/cloud_purchase_commitments.csv --discounts example_cloud_provider_data/cloud_discounts.csv --output cbf/cloud_cbf.csv
+```
+
+### Uploading Data
+
+After processing the data, the script will prompt you to upload the CBF data to an AnyCost Stream connection:
+
+1. Enter `y` if you want to upload the data.
+2. Provide your AnyCost Stream Connection ID.
+3. Enter your CloudZero API key when prompted.
+
+### Viewing Results
+
+Once uploaded, you can view the processed data within the CloudZero platform. Navigate to [Settings](https://app.cloudzero.com/organization/connections) and select your connection from the **Billing Connections** table. The **Status** of your connection will update once CloudZero processes the data.
 
 ## Usage Examples
 
-To use the [anycost_example.py](./anycost_example.py) script to [transform the cost data to CBF](#step-2-transform-cost-data-to-cbf), run the following command:
-
-```
-python anycost_example.py
-```
+To use the `anycost_example.py` script to transform the cost data to CBF, run the command as described in the [Running the Script](#running-the-script) section.
 
 The script then optionally uploads the example CBF to an AnyCost Stream connection. To upload the data:
 
@@ -148,7 +153,7 @@ The script then optionally uploads the example CBF to an AnyCost Stream connecti
 2. Enter your AnyCost Stream connection ID.
 3. Enter your CloudZero API key.
 
-The script [sends the example CBF data to CloudZero](#step-3-send-the-cbf-data-to-cloudzero), which processes the first ingest of data.
+The script sends the example CBF data to CloudZero, which processes the first ingest of data.
 
 You can view the data in CloudZero by navigating to [Settings](https://app.cloudzero.com/organization/connections) and selecting your connection from the **Billing Connections** table.
 
