@@ -14,18 +14,29 @@ import requests
 apiversion = os.environ.get("APIVERSION")
 token = os.environ.get("TOKEN")
 
-headers = {
-    "accept": "application/json",
-    "authorization": "Bearer {}".format(token)
-}
-url = "https://api.linode.com/{}/account/invoices".format(apiversion)
+def get_invoivces():
+    headers = {
+        "accept": "application/json",
+        "authorization": "Bearer {}".format(token)
+    }
+    url = "https://api.linode.com/{}/account/invoices".format(apiversion)
 
-response = requests.get(url, headers=headers)
-data = response.json()
-df = pd.DataFrame(data['data'])
-df['date'] = pd.to_datetime(df['date'])
-cutoff_date = datetime.now() - pd.Timedelta(days=30)
+    response = requests.get(url, headers=headers)
+    data = response.json()
 
-print(df)
-records_last_30_days = df[df['date'] > cutoff_date]
-print(records_last_30_days)
+    return data
+
+def get_invoice_by_date(data, d):
+    df = pd.DataFrame(data['data'])
+    df.style.hide(axis='index')
+    df['date'] = pd.to_datetime(df['date'])
+    cutoff_date = datetime.now() - pd.Timedelta(days=d)
+    records = df[df['date'] > cutoff_date]
+
+    return records
+
+data = get_invoivces()
+r = get_invoice_by_date(data, 90)
+
+#print(r)
+print(r['id'].values.tolist())
