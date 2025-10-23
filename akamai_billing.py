@@ -26,6 +26,18 @@ def get_invoivces():
 
     return data
 
+def get_invoice_detail(id):
+    headers = {
+        "accept": "application/json",
+        "authorization": "Bearer {}".format(token)
+    }
+    url = "https://api.linode.com/{0}/account/invoices/{1}/items".format(apiversion, id)
+
+    response = requests.get(url, headers=headers)
+    data = response.json()
+
+    return data
+
 def get_invoice_by_date(data, d):
     df = pd.DataFrame(data['data'])
     df.style.hide(axis='index')
@@ -35,8 +47,19 @@ def get_invoice_by_date(data, d):
 
     return records
 
-data = get_invoivces()
-r = get_invoice_by_date(data, 90)
+def invoice_detail(data):
+    df = pd.DataFrame(data['data'])
+    df.style.hide(axis='index')
 
-#print(r)
-print(r['id'].values.tolist())
+    return df 
+
+data = get_invoivces()
+r = get_invoice_by_date(data, 30)
+
+invoices = r['id'].values.tolist()
+
+for i in invoices:
+    r = get_invoice_detail(i)
+    d = invoice_detail(r)
+    print(d)
+
