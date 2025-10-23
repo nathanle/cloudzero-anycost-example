@@ -118,7 +118,7 @@ def upload_to_anycost(cbf_rows: list[dict[str, str]]):
 
 data = get_invoivces()
 #print(data)
-r = get_invoice_by_date(data, 90)
+r = get_invoice_by_date(data, 120)
 
 invoices = r['id'].values.tolist()
 
