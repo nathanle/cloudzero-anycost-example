@@ -14,6 +14,8 @@ import requests
 
 apiversion = os.environ.get("APIVERSION")
 token = os.environ.get("TOKEN")
+czid = os.environ.get("CZID")
+czkey = os.environ.get("CZKEY")
 
 def get_invoivces():
     headers = {
@@ -24,8 +26,18 @@ def get_invoivces():
 
     response = requests.get(url, headers=headers)
     data = response.json()
-
-    return data
+    if data["pages"] == 1:
+        return data["data"]
+    else:
+        page = 2
+        while page >= data["pages"]:
+            url = "https://api.linode.com/v4/account/invoices?page={}".format(page)
+            response_p = requests.get(url, headers=headers)
+            datapage = response_p.json()
+            for x in datapage["data"]:
+                data["data"].append(x)
+            page =+ 1
+        return data["data"]
 
 def get_invoice_detail(id):
     headers = {
@@ -37,10 +49,23 @@ def get_invoice_detail(id):
     response = requests.get(url, headers=headers)
     data = response.json()
 
-    return data
+    #print("Pages {}".format(data["pages"]))
+
+    if data["pages"] == 1:
+        return data["data"]
+    else:
+        page = 2
+        while page >= data["pages"]:
+            url = "https://api.linode.com/{0}/account/invoices/{1}/items?page={2}".format(apiversion, id, page)
+            response_p = requests.get(url, headers=headers)
+            datapage = response_p.json()
+            for x in datapage["data"]:
+                data["data"].append(x)
+            page =+ 1
+        return data["data"]
 
 def get_invoice_by_date(data, d):
-    df = pd.DataFrame(data['data'])
+    df = pd.DataFrame(data)
     df.style.hide(axis='index')
     df['date'] = pd.to_datetime(df['date'])
     cutoff_date = datetime.now() - pd.Timedelta(days=d)
@@ -49,14 +74,10 @@ def get_invoice_by_date(data, d):
     return records
 
 def invoice_detail(data):
-    df = pd.DataFrame(data['data'])
+    df = pd.DataFrame(data)
     df.style.hide(axis='index')
 
     return df 
-
-def create_cbf_dataframe():
-    df = pd.DataFrame(columns=['lineitem/type', '', ''])
-
 
 def relabel_dataframe(df):
     df_new = df.drop(['unit_price', 'type'], axis=1)
@@ -86,27 +107,26 @@ def process_usage_data(usage_rows) -> list[dict[str, str]]:
 
 def upload_to_anycost(cbf_rows: list[dict[str, str]]):
     """Upload CBF rows to an AnyCost Stream connection."""
-    anycost_stream_connection_id = input("Enter your AnyCost Stream Connection ID: ")
-    cloudzero_api_key = getpass.getpass("Enter your CloudZero API Key: ")
 
     response = requests.post(
-        f"https://api.cloudzero.com/v2/connections/billing/anycost/{anycost_stream_connection_id}/billing_drops",
-        headers={"Authorization": cloudzero_api_key},
+        f"https://api.cloudzero.com/v2/connections/billing/anycost/{czid}/billing_drops",
+        headers={"Authorization": czkey},
         json={"data": cbf_rows},
     )
 
     print(json.dumps(response.json(), indent=2))
 
 data = get_invoivces()
+#print(data)
 r = get_invoice_by_date(data, 90)
 
 invoices = r['id'].values.tolist()
 
 for i in invoices:
     r = get_invoice_detail(i)
+    #print(r)
     d = invoice_detail(r)
     relabel = relabel_dataframe(d)
-    #csv = relabel.to_csv(index=False)
     cbf_rows = process_usage_data(relabel)
     print(cbf_rows)
     upload_to_anycost(cbf_rows)
