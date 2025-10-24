@@ -100,6 +100,18 @@ def get_service(lineid):
             return x[0] 
         else:
             return "Linode"
+    elif "Nanode" in lineid:
+        x = re.search(r"Nanode \d+GB", lineid)
+        if x[0] is not None:
+            return x[0] 
+        else:
+            return "Nanode"
+    elif "Dedicated" in lineid:
+        x = re.search(r"Dedicated \d+GB", lineid)
+        if x[0] is not None:
+            return x[0] 
+        else:
+            return "Dedicated"
     else:
         return "None"
 
