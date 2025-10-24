@@ -1,5 +1,6 @@
 
 import csv
+import re
 import decimal
 import getpass
 import json
@@ -86,18 +87,35 @@ def relabel_dataframe(df):
 
     return df_renamed
 
+def get_service(lineid):
+    if "LKE" in lineid:
+        return "LKE"
+    elif "NodeBalancer" in lineid:
+        return "NodeBalancer"
+    elif "Storage Volume" in lineid:
+        return "Storage Volume"
+    elif "Linode" in lineid:
+        x = re.search(r"Linode \d+GB", lineid)
+        if x[0] is not None:
+            return x[0] 
+        else:
+            return "Linode"
+    else:
+        return "None"
+
+
 def process_usage_data(usage_rows) -> list[dict[str, str]]:
     """Process usage data and return transformed CBF rows."""
     cbf_rows = []
     for index, usage in usage_rows.iterrows():
+        service = get_service(usage["resource/id"])
         if usage["resource/region"] == None:
             usage["resource/region"] = "None"
         cbf_rows.append({
             "lineitem/type": "Usage",
             "resource/id": usage["resource/id"],
-            #"lineitem/usage": usage["lineitem/usage"],
+            "resource/service": service,
             "usage/amount": str(usage["usage/amount"]),
-            #"lineitem/tax": str(usage["lineitem/tax"]),
             "cost/cost": str(usage["cost/cost"]),
             "time/usage_start": usage["time/usage_start"],
             "time/usage_end": usage["time/usage_end"],
@@ -118,7 +136,7 @@ def upload_to_anycost(cbf_rows: list[dict[str, str]]):
 
 data = get_invoivces()
 #print(data)
-r = get_invoice_by_date(data, 120)
+r = get_invoice_by_date(data, 360)
 
 invoices = r['id'].values.tolist()
 
