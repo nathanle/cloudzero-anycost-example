@@ -28,6 +28,7 @@ def get_invoivces():
     response = requests.get(url, headers=headers)
     data = response.json()
     if data["pages"] == 1:
+
         return data["data"]
     else:
         page = 2
@@ -38,6 +39,7 @@ def get_invoivces():
             for x in datapage["data"]:
                 data["data"].append(x)
             page =+ 1
+
         return data["data"]
 
 def get_invoice_detail(id):
@@ -53,6 +55,7 @@ def get_invoice_detail(id):
     #print("Pages {}".format(data["pages"]))
 
     if data["pages"] == 1:
+
         return data["data"]
     else:
         page = 2
@@ -63,6 +66,7 @@ def get_invoice_detail(id):
             for x in datapage["data"]:
                 data["data"].append(x)
             page =+ 1
+
         return data["data"]
 
 def get_invoice_by_date(data, d):
