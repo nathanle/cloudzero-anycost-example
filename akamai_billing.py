@@ -12,7 +12,8 @@ import pandas as pd
 pd.set_option('display.max_rows', None)
 
 import requests
-
+####
+#Requires following ENV Variables:
 apiversion = os.environ.get("APIVERSION")
 token = os.environ.get("TOKEN")
 czid = os.environ.get("CZID")
