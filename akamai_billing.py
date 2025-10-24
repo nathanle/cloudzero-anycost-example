@@ -129,7 +129,7 @@ def process_usage_data(usage_rows, invoice) -> list[dict[str, str]]:
             usage["resource/region"] = "None"
         cbf_rows.append({
             "lineitem/type": "Usage",
-            "bill/invoice_id": invoice,
+            "bill/invoice_id": str(invoice),
             "resource/id": usage["resource/id"],
             "resource/service": service,
             "usage/amount": str(usage["usage/amount"]),
