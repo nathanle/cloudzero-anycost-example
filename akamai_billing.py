@@ -31,14 +31,15 @@ def get_invoivces():
 
         return data["data"]
     else:
-        page = 2
-        while page >= data["pages"]:
+        page = 1
+        while page <= data["pages"]:
+            print("Page {} of {}".format(page, data["pages"]))
             url = "https://api.linode.com/v4/account/invoices?page={}".format(page)
             response_p = requests.get(url, headers=headers)
             datapage = response_p.json()
             for x in datapage["data"]:
                 data["data"].append(x)
-            page =+ 1
+            page += 1
 
         return data["data"]
 
@@ -58,14 +59,15 @@ def get_invoice_detail(id):
 
         return data["data"]
     else:
-        page = 2
-        while page >= data["pages"]:
+        page = 1
+        while page <= data["pages"]:
+            print("Page {} of {}".format(page, data["pages"]))
             url = "https://api.linode.com/{0}/account/invoices/{1}/items?page={2}".format(apiversion, id, page)
             response_p = requests.get(url, headers=headers)
             datapage = response_p.json()
             for x in datapage["data"]:
                 data["data"].append(x)
-            page =+ 1
+            page += 1
 
         return data["data"]
 
@@ -152,17 +154,15 @@ def upload_to_anycost(cbf_rows: list[dict[str, str]]):
     print(json.dumps(response.json(), indent=2))
 
 data = get_invoivces()
-#print(data)
 r = get_invoice_by_date(data, 360)
 
 invoices = r['id'].values.tolist()
 
 for i in invoices:
     r = get_invoice_detail(i)
-    #print(r)
     d = invoice_detail(r)
     relabel = relabel_dataframe(d)
     cbf_rows = process_usage_data(relabel, i)
-    print(cbf_rows)
+    #print(cbf_rows)
     upload_to_anycost(cbf_rows)
 
