@@ -120,7 +120,7 @@ def get_service(lineid):
         return "None"
 
 
-def process_usage_data(usage_rows) -> list[dict[str, str]]:
+def process_usage_data(usage_rows, invoice) -> list[dict[str, str]]:
     """Process usage data and return transformed CBF rows."""
     cbf_rows = []
     for index, usage in usage_rows.iterrows():
@@ -129,6 +129,7 @@ def process_usage_data(usage_rows) -> list[dict[str, str]]:
             usage["resource/region"] = "None"
         cbf_rows.append({
             "lineitem/type": "Usage",
+            "bill/invoice_id": invoice,
             "resource/id": usage["resource/id"],
             "resource/service": service,
             "usage/amount": str(usage["usage/amount"]),
@@ -161,7 +162,7 @@ for i in invoices:
     #print(r)
     d = invoice_detail(r)
     relabel = relabel_dataframe(d)
-    cbf_rows = process_usage_data(relabel)
+    cbf_rows = process_usage_data(relabel, i)
     print(cbf_rows)
     upload_to_anycost(cbf_rows)
 
