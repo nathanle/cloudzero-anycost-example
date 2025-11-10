@@ -8,7 +8,7 @@ import sys
 import os
 import argparse
 from datetime import datetime
-import pandas as pd 
+import pandas as pd
 pd.set_option('display.max_rows', None)
 
 import requests
@@ -18,7 +18,7 @@ apiversion = os.environ.get("APIVERSION")
 token = os.environ.get("TOKEN")
 czid = os.environ.get("CZID")
 czkey = os.environ.get("CZKEY")
-days = os.environ.get("DAYS")
+days = int(os.environ.get("DAYS"))
 
 def get_invoivces():
     headers = {
@@ -86,7 +86,7 @@ def invoice_detail(data):
     df = pd.DataFrame(data)
     df.style.hide(axis='index')
 
-    return df 
+    return df
 
 def relabel_dataframe(df):
     df_new = df.drop(['unit_price', 'type'], axis=1)
@@ -105,21 +105,31 @@ def get_service(lineid):
     elif "Linode" in lineid:
         x = re.search(r"Linode \d+GB", lineid)
         if x[0] is not None:
-            return x[0] 
+            return x[0]
         else:
             return "Linode"
     elif "Nanode" in lineid:
         x = re.search(r"Nanode \d+GB", lineid)
         if x[0] is not None:
-            return x[0] 
+            return x[0]
         else:
             return "Nanode"
     elif "Dedicated" in lineid:
         x = re.search(r"Dedicated \d+GB", lineid)
         if x[0] is not None:
-            return x[0] 
+            return x[0]
         else:
             return "Dedicated"
+    elif "Premium" in lineid:
+        x = re.search(r"Premium \d+GB", lineid)
+        if x[0] is not None:
+            return x[0]
+        else:
+            return "Premium"
+    elif "Longview" in lineid:
+        return "Longview"
+    elif "VPC" in lineid:
+        return "VPC"
     else:
         return "None"
 
