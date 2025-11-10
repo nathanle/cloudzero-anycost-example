@@ -18,6 +18,7 @@ apiversion = os.environ.get("APIVERSION")
 token = os.environ.get("TOKEN")
 czid = os.environ.get("CZID")
 czkey = os.environ.get("CZKEY")
+days = os.environ.get("DAYS")
 
 def get_invoivces():
     headers = {
@@ -155,7 +156,7 @@ def upload_to_anycost(cbf_rows: list[dict[str, str]]):
     print(json.dumps(response.json(), indent=2))
 
 data = get_invoivces()
-r = get_invoice_by_date(data, 360)
+r = get_invoice_by_date(data, days)
 
 invoices = r['id'].values.tolist()
 
