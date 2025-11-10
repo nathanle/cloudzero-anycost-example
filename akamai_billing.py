@@ -155,16 +155,17 @@ def upload_to_anycost(cbf_rows: list[dict[str, str]]):
 
     print(json.dumps(response.json(), indent=2))
 
-data = get_invoivces()
-r = get_invoice_by_date(data, days)
+if __name__ == "__main__":
+    data = get_invoivces()
+    r = get_invoice_by_date(data, days)
 
-invoices = r['id'].values.tolist()
+    invoices = r['id'].values.tolist()
 
-for i in invoices:
-    r = get_invoice_detail(i)
-    d = invoice_detail(r)
-    relabel = relabel_dataframe(d)
-    cbf_rows = process_usage_data(relabel, i)
-    #print(cbf_rows)
-    upload_to_anycost(cbf_rows)
+    for i in invoices:
+        r = get_invoice_detail(i)
+        d = invoice_detail(r)
+        relabel = relabel_dataframe(d)
+        cbf_rows = process_usage_data(relabel, i)
+        #print(cbf_rows)
+        upload_to_anycost(cbf_rows)
 
